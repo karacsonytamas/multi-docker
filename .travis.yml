@@ -1,0 +1,36 @@
+language: generic
+sudo: required
+services:
+    - docker
+
+before_install:
+    - docker build -t karacsonytamas/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+    - docker run -e CI=true karacsonytamas/react-test npm test
+
+after_success:
+    - docker build -t karacsonytamas/multi-client ./client
+    - docker build -t karacsonytamas/multi-nginx ./nginx
+    - docker build -t karacsonytamas/multi-server ./server
+    - docker build -t karacsonytamas/multi-worker ./worker
+    # Login into the docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    # Take those images and push them to docker hub
+    - docker push karacsonytamas/multi-client
+    - docker push karacsonytamas/multi-nginx
+    - docker push karacsonytamas/multi-server
+    - docker push karacsonytamas/multi-worker
+
+#deploy:
+#    edge: true
+#    provider: elasticbeanstalk
+#    region: us-east-2
+#    app: docker-multi
+#    env: DockerMulti-env
+#    bucet_name: elasticbeanstalk-us-east-2-393787123670
+#    bucket_path: multi_docker
+#    on:
+#        branch: master
+#    access_key_id: $AWS_ACCESS_KEY
+#    secret_access_key: $AWS_SECRET_KEY
